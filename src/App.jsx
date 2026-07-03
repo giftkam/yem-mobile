@@ -375,3 +375,130 @@ function AssetScreen({ asset, lang, t, onBack, onOrderPlaced }) {
     </div>
   );
 }
+function OrdersScreen({ lang, setLang, t }) {
+  const [orders, setOrders] = useState([]);
+  const [filter, setFilter] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    api.getOrders().then((r) => setOrders(r.orders)).catch((e) => setError(e.message)).finally(() => setLoading(false));
+  }, []);
+
+  const list = orders.filter((o) => filter === "all" || o.side === filter.slice(0, -1));
+  return (
+    <div className="pb-6">
+      <Header lang={lang} setLang={setLang} title={t("orders.title")} />
+      <div className="px-4"><SegmentedTabs value={filter} onChange={setFilter} options={[{ value: "all", label: t("orders.all") }, { value: "buys", label: t("orders.buys") }, { value: "sells", label: t("orders.sells") }]} /></div>
+      <div className="mt-4 px-4">
+        {loading && <div className="flex justify-center py-6"><Loader2 size={18} className="animate-spin" style={{ color: C.ash }} /></div>}
+        {error && <div className="rounded-lg px-3 py-2 text-xs" style={{ background: `${C.coral}1A`, color: C.coral }}>{error}</div>}
+        {!loading && !error && list.length === 0 && <div className="rounded-2xl p-5 text-center text-xs" style={{ background: C.ink2, color: C.ash }}>{t("orders.empty")}</div>}
+        {!loading && list.length > 0 && (
+          <div className="flex flex-col gap-2.5">
+            {list.map((o) => (
+              <div key={o.id} className="flex items-center justify-between rounded-xl px-3 py-2.5" style={{ background: C.ink2 }}>
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full text-[11px] font-bold" style={{ background: C.ink3, color: o.side === "buy" ? C.teal : C.coral }}>{o.side === "buy" ? <ArrowUpRight size={15} /> : <ArrowDownRight size={15} />}</div>
+                  <div>
+                    <div className="text-xs font-semibold" style={{ color: C.sand }}>{o.side === "buy" ? t("asset.bought") : t("asset.sold")} {o.asset_symbol}</div>
+                    <div className="text-[11px]" style={{ color: C.ash }}>{Number(o.quantity).toFixed(4)} · {t("orders.fee")} {formatUsd(o.fee_usd)}</div>
+                  </div>
+                </div>
+                <div className="text-xs font-semibold" style={{ color: C.sand, fontFamily: "'IBM Plex Mono', monospace" }}>{formatUsd(o.total_usd)}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function WalletScreen({ lang, setLang, t, balanceUsd, refreshBalance }) {
+  const region = "AFR";
+  const methods = PAYMENT_METHODS[region];
+  const [mode, setMode] = useState(null);
+  const [picked, setPicked] = useState(null);
+  const [amount, setAmount] = useState("");
+  const [txns, setTxns] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => { api.getTransactions().then((r) => setTxns(r.transactions)).catch(() => {}); }, []);
+
+  const amountUSD = Number(amount) || 0;
+  const reset = () => { setMode(null); setPicked(null); setAmount(""); setError(""); };
+
+  const confirm = async () => {
+    if (amountUSD <= 0 || !picked) return;
+    setLoading(true); setError("");
+    try {
+      if (mode === "deposit") await api.deposit({ method: picked, amountUsd: amountUSD, currency: "USD" });
+      else await api.withdraw({ method: picked, amountUsd: amountUSD, currency: "USD", destination: picked });
+      const [{ transactions }] = await Promise.all([api.getTransactions()]);
+      setTxns(transactions);
+      refreshBalance();
+      reset();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="pb-6">
+      <Header lang={lang} setLang={setLang} title={t("wallet.title")} />
+      <div className="px-4">
+        <div className="rounded-2xl p-4" style={{ background: C.ink2 }}>
+          <div className="text-xs font-medium uppercase tracking-wider" style={{ color: C.ash }}>{t("wallet.availableBalance")}</div>
+          <div className="mt-1 text-2xl font-bold" style={{ color: C.sand, fontFamily: "'Fraunces', serif" }}>{formatUsd(balanceUsd)}</div>
+          <div className="mt-3 flex gap-2">
+            <button onClick={() => setMode(mode === "deposit" ? null : "deposit")} className="flex-1 rounded-xl py-2 text-xs font-bold" style={{ background: C.gold, color: C.ink }}>{t("wallet.deposit")}</button>
+            <button onClick={() => setMode(mode === "withdraw" ? null : "withdraw")} className="flex-1 rounded-xl py-2 text-xs font-bold" style={{ background: C.ink3, color: C.sand }}>{t("wallet.withdraw")}</button>
+          </div>
+        </div>
+        {mode && (
+          <div className="mt-4 rounded-2xl p-4" style={{ background: C.ink2 }}>
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-sm font-semibold" style={{ color: C.sand }}>{mode === "deposit" ? t("wallet.depositWith") : t("wallet.withdrawTo")}</span>
+              <button onClick={reset} style={{ color: C.ash }}><X size={16} /></button>
+            </div>
+            <div className="flex flex-col gap-2">
+              {methods.map((m) => (
+                <button key={m.id} onClick={() => setPicked(m.id)} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-left" style={{ background: picked === m.id ? `${C.gold}1F` : C.ink3, border: picked === m.id ? `1px solid ${C.gold}` : "1px solid transparent" }}>
+                  <m.icon size={16} style={{ color: C.gold }} />
+                  <div className="flex-1"><div className="text-xs font-semibold" style={{ color: C.sand }}>{m.label}</div><div className="text-[11px]" style={{ color: C.ash }}>{m.sub}</div></div>
+                  {picked === m.id && <Check size={14} style={{ color: C.gold }} />}
+                </button>
+              ))}
+            </div>
+            {picked && (
+              <div className="mt-3">
+                <label className="text-xs font-medium uppercase tracking-wider" style={{ color: C.ash }}>{t("wallet.amount")} (USD)</label>
+                <input value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ""))} placeholder="0.00" inputMode="decimal" className="mt-1 w-full rounded-xl border-0 px-3 py-2.5 text-lg font-semibold outline-none" style={{ background: C.ink3, color: C.sand, fontFamily: "'IBM Plex Mono', monospace" }} />
+                {error && <div className="mt-2 rounded-lg px-3 py-2 text-xs" style={{ background: `${C.coral}1A`, color: C.coral }}>{error}</div>}
+                <button onClick={confirm} disabled={loading} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold" style={{ background: C.teal, color: C.ink, opacity: amountUSD > 0 ? 1 : 0.5 }}>
+                  {loading && <Loader2 size={14} className="animate-spin" />}{mode === "deposit" ? t("wallet.confirmDeposit") : t("wallet.confirmWithdraw")}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+        <div className="mt-6">
+          <div className="mb-2 text-sm font-semibold" style={{ color: C.sand }}>{t("wallet.recentActivity")}</div>
+          <div className="flex flex-col gap-2.5">
+            {txns.length === 0 && <div className="text-xs" style={{ color: C.ash }}>—</div>}
+            {txns.map((tx) => (
+              <div key={tx.id} className="flex items-center justify-between rounded-xl px-3 py-2.5" style={{ background: C.ink2 }}>
+                <div><div className="text-xs font-semibold capitalize" style={{ color: C.sand }}>{tx.type} · {tx.method}</div><div className="text-[11px]" style={{ color: C.ash }}>{tx.status}</div></div>
+                <div className="text-xs font-semibold" style={{ color: tx.type === "deposit" ? C.teal : C.coral, fontFamily: "'IBM Plex Mono', monospace" }}>{tx.type === "deposit" ? "+" : "-"}{formatUsd(tx.net_usd)}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
