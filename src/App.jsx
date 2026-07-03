@@ -664,3 +664,87 @@ function BottomNav({ screen, setScreen, t }) {
     </div>
   );
 }
+/* ---------------------------------- app shell ---------------------------------- */
+export default function App() {
+  const [booting, setBooting] = useState(true);
+  const [authed, setAuthed] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [screen, setScreen] = useState("home");
+  const [lang, setLang] = useState("en");
+  const [selectedAsset, setSelectedAsset] = useState(null);
+  const [balanceUsd, setBalanceUsd] = useState(0);
+  const [kycStatus, setKycStatus] = useState("unverified");
+
+  const t = (key) => (I18N[lang] && I18N[lang][key]) || I18N.en[key] || key;
+
+  const refreshBalance = () => api.getWallet().then((r) => setBalanceUsd(r.balanceUsd)).catch(() => {});
+
+  useEffect(() => {
+    const token = loadStoredToken();
+    if (!token) { setBooting(false); return; }
+    setAuthToken(token);
+    Promise.all([api.getWallet(), api.getKycStatus()])
+      .then(([wallet, kyc]) => {
+        setBalanceUsd(wallet.balanceUsd);
+        setKycStatus(kyc.kycStatus);
+        setAuthed(true);
+        setCurrentUser((u) => u || { fullName: "Trader", region: "AM", role: "user" });
+      })
+      .catch(() => setAuthToken(null))
+      .finally(() => setBooting(false));
+  }, []);
+
+  const handleAuth = (token, user) => {
+    setAuthToken(token);
+    setCurrentUser(user);
+    setKycStatus(user.kycStatus || "unverified");
+    setAuthed(true);
+    refreshBalance();
+    setScreen("home");
+  };
+  const handleLogout = () => { setAuthToken(null); setAuthed(false); setCurrentUser(null); setScreen("home"); };
+  const openAsset = (asset) => { setSelectedAsset(asset); setScreen("asset"); };
+
+  if (booting) {
+    return (
+      <div className="flex min-h-screen w-full items-center justify-center" style={{ background: C.ink }}>
+        <Loader2 size={24} className="animate-spin" style={{ color: C.gold }} />
+      </div>
+    );
+  }
+
+  let body;
+  if (!authed) {
+    body = <AuthScreen lang={lang} setLang={setLang} t={t} onAuth={handleAuth} />;
+  } else if (screen === "asset" && selectedAsset) {
+    body = <AssetScreen asset={selectedAsset} lang={lang} t={t} onBack={() => setScreen("home")} onOrderPlaced={refreshBalance} />;
+  } else if (screen === "markets") {
+    body = <HomeScreen lang={lang} setLang={setLang} t={t} balanceUsd={balanceUsd} openAsset={openAsset} />;
+  } else if (screen === "orders") {
+    body = <OrdersScreen lang={lang} setLang={setLang} t={t} />;
+  } else if (screen === "wallet") {
+    body = <WalletScreen lang={lang} setLang={setLang} t={t} balanceUsd={balanceUsd} refreshBalance={refreshBalance} />;
+  } else if (screen === "kyc") {
+    body = <KycScreen region={currentUser?.region || "AM"} lang={lang} setLang={setLang} t={t} status={kycStatus} setStatus={setKycStatus} onBack={() => setScreen("profile")} />;
+  } else if (screen === "profile") {
+    body = <ProfileScreen currentUser={currentUser} lang={lang} setLang={setLang} t={t} kycStatus={kycStatus} openKyc={() => setScreen("kyc")} onLogout={handleLogout} />;
+  } else {
+    body = <HomeScreen lang={lang} setLang={setLang} t={t} balanceUsd={balanceUsd} openAsset={openAsset} />;
+  }
+
+  const showNav = authed && screen !== "asset" && screen !== "kyc";
+
+  return (
+    <div className="flex min-h-screen w-full items-center justify-center p-6" style={{ background: `radial-gradient(circle at 30% 20%, ${C.ink3} 0%, ${C.ink} 55%)`, fontFamily: "'IBM Plex Sans', sans-serif" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+        * { box-sizing: border-box; }
+        ::-webkit-scrollbar { width: 0; height: 0; }
+      `}</style>
+      <div className="relative flex h-[850px] w-[420px] max-w-full flex-col overflow-hidden rounded-[36px] border shadow-2xl" style={{ background: C.ink, borderColor: "#FFFFFF1A" }}>
+        <div className="flex-1 overflow-y-auto">{body}</div>
+        {showNav && <BottomNav screen={screen} setScreen={setScreen} t={t} />}
+      </div>
+    </div>
+  );
+}
