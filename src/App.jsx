@@ -502,3 +502,131 @@ function WalletScreen({ lang, setLang, t, balanceUsd, refreshBalance }) {
     </div>
   );
 }
+function OwnerPanel({ t }) {
+  const [overview, setOverview] = useState(null);
+  const [error, setError] = useState("");
+  const [payoutResult, setPayoutResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const load = () => api.getAdminOverview().then(setOverview).catch((e) => setError(e.message));
+  useEffect(() => { load(); }, []);
+
+  const requestPayout = async () => {
+    setLoading(true); setPayoutResult(null); setError("");
+    try {
+      const res = await api.requestPayout();
+      setPayoutResult(res);
+      load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (error) return <div className="mt-4 rounded-2xl p-4 text-xs" style={{ background: `${C.coral}1A`, color: C.coral }}>{error}</div>;
+  if (!overview) return <div className="mt-4 flex justify-center rounded-2xl p-4" style={{ background: C.ink2 }}><Loader2 size={16} className="animate-spin" style={{ color: C.ash }} /></div>;
+
+  return (
+    <>
+      <div className="mt-4 rounded-2xl p-4" style={{ background: C.ink2 }}>
+        <div className="mb-2 text-xs font-semibold uppercase tracking-wider" style={{ color: C.gold }}>{t("owner.platformOverview")}</div>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-xl p-3" style={{ background: C.ink3 }}><div className="text-[10px]" style={{ color: C.ash }}>{t("owner.totalUsers")}</div><div className="mt-0.5 text-lg font-bold" style={{ color: C.sand }}>{overview.totalUsers}</div></div>
+          <div className="rounded-xl p-3" style={{ background: C.ink3 }}><div className="text-[10px]" style={{ color: C.ash }}>{t("owner.volumeToday")}</div><div className="mt-0.5 text-lg font-bold" style={{ color: C.sand }}>{formatUsd(overview.tradeVolumeTodayUsd)}</div></div>
+        </div>
+        <div className="mt-3">
+          <div className="mb-1.5 text-[10px]" style={{ color: C.ash }}>{t("owner.regionSplit")}</div>
+          <div className="flex gap-2">
+            {overview.regionSplit.length === 0 && <span className="text-[11px]" style={{ color: C.ash }}>No users yet</span>}
+            {overview.regionSplit.map((r) => <div key={r.region} className="flex flex-1 items-center gap-1.5 rounded-lg px-2 py-1.5" style={{ background: C.ink3 }}><RegionPill region={r.region} /><span className="text-xs font-semibold" style={{ color: C.sand }}>{r.n}</span></div>)}
+          </div>
+        </div>
+      </div>
+      <div className="mt-4 rounded-2xl p-4" style={{ background: C.ink2, border: `1px solid ${C.gold}33` }}>
+        <div className="mb-1 text-xs font-semibold uppercase tracking-wider" style={{ color: C.gold }}>{t("owner.dashboard")}</div>
+        <div className="text-xs" style={{ color: C.ash }}>{t("owner.earnings")}</div>
+        <div className="mt-1 text-2xl font-bold" style={{ color: C.sand, fontFamily: "'Fraunces', serif" }}>{formatUsd(overview.availableForPayoutUsd)}</div>
+        <div className="mt-1 text-[11px]" style={{ color: C.ash }}>Lifetime revenue: {formatUsd(overview.totalRevenueUsd)}</div>
+        <button onClick={requestPayout} disabled={loading} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold" style={{ background: C.gold, color: C.ink }}>{loading && <Loader2 size={14} className="animate-spin" />}{t("owner.requestPayout")}</button>
+        {payoutResult && (
+          <div className="mt-3 flex items-start gap-2 rounded-xl px-3 py-2.5 text-[11px] leading-relaxed" style={{ background: `${C.blue}1A`, color: C.blue }}>
+            <Info size={13} className="mt-0.5 shrink-0" />
+            <span>Payout {payoutResult.status} — {formatUsd(payoutResult.amountUsd)} to {payoutResult.destination}. This only actually reaches Airtel once paymentProvider.js is wired to a real, licensed aggregator.</span>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+function KycScreen({ region, lang, setLang, t, status, setStatus, onBack }) {
+  const [step, setStep] = useState(0);
+  const [fullName, setFullName] = useState("");
+  const [country, setCountry] = useState(COUNTRIES_BY_REGION[region][0]);
+  const [docType, setDocType] = useState(DOCUMENT_TYPES[region][0]);
+  const [uploaded, setUploaded] = useState(false);
+  const [captured, setCaptured] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const steps = [t("kyc.personal"), t("kyc.document"), t("kyc.selfie"), t("kyc.review")];
+
+  const submit = async () => {
+    setSubmitting(true); setError("");
+    try {
+      await api.submitKyc({ documentType: docType, documentRef: "placeholder-doc", selfieRef: "placeholder-selfie", country });
+      setStatus("pending");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (status === "pending" || status === "verified") {
+    return (
+      <div className="px-4 pb-6">
+        <Header lang={lang} setLang={setLang} title={t("kyc.title")} onBack={onBack} />
+        <div className="mt-4 flex flex-col items-center rounded-2xl p-6 text-center" style={{ background: C.ink2 }}>
+          <div className="flex h-12 w-12 items-center justify-center rounded-full" style={{ background: `${C.gold}22` }}><ShieldCheck size={22} style={{ color: C.gold }} /></div>
+          <div className="mt-3 text-sm font-semibold" style={{ color: C.sand }}>{status === "verified" ? t("profile.verified") : t("kyc.underReview")}</div>
+          <div className="mt-1 text-xs" style={{ color: C.ash }}>{t("kyc.submittedNote")}</div>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="px-4 pb-6">
+      <Header lang={lang} setLang={setLang} title={t("kyc.title")} onBack={onBack} />
+      <div className="mb-4 flex items-center gap-1.5">{steps.map((_, i) => <div key={i} className="h-1 flex-1 rounded-full" style={{ background: i <= step ? C.gold : C.ink3 }} />)}</div>
+      {step === 0 && (
+        <div className="flex flex-col gap-3">
+          <div><label className="text-xs font-medium uppercase tracking-wider" style={{ color: C.ash }}>{t("kyc.fullName")}</label><input value={fullName} onChange={(e) => setFullName(e.target.value)} className="mt-1 w-full rounded-xl border-0 px-3 py-2.5 text-sm outline-none" style={{ background: C.ink2, color: C.sand }} /></div>
+          <div><label className="text-xs font-medium uppercase tracking-wider" style={{ color: C.ash }}>{t("kyc.country")}</label><select value={country} onChange={(e) => setCountry(e.target.value)} className="mt-1 w-full rounded-xl border-0 px-3 py-2.5 text-sm outline-none" style={{ background: C.ink2, color: C.sand }}>{COUNTRIES_BY_REGION[region].map((c) => <option key={c} value={c}>{c}</option>)}</select></div>
+        </div>
+      )}
+      {step === 1 && (
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap gap-2">{DOCUMENT_TYPES[region].map((d) => <button key={d} onClick={() => setDocType(d)} className="rounded-full px-3 py-1.5 text-xs font-semibold" style={{ background: docType === d ? C.gold : C.ink2, color: docType === d ? C.ink : C.sand }}>{d}</button>)}</div>
+          <button onClick={() => setUploaded(true)} className="flex items-center justify-center gap-2 rounded-xl py-6 text-xs font-semibold" style={{ background: C.ink2, color: uploaded ? C.teal : C.sand, border: `1px dashed ${uploaded ? C.teal : "#FFFFFF33"}` }}>{uploaded ? <Check size={16} /> : <Upload size={16} />}{uploaded ? t("kyc.uploaded") : t("kyc.uploadDoc")}</button>
+        </div>
+      )}
+      {step === 2 && (
+        <div className="flex flex-col items-center gap-3 py-4">
+          <button onClick={() => setCaptured(true)} className="flex h-32 w-32 items-center justify-center rounded-full" style={{ background: C.ink2, border: `2px dashed ${captured ? C.teal : "#FFFFFF33"}` }}>{captured ? <Check size={28} style={{ color: C.teal }} /> : <Camera size={28} style={{ color: C.ash }} />}</button>
+        </div>
+      )}
+      {step === 3 && (
+        <div className="flex flex-col gap-2 rounded-2xl p-4 text-xs" style={{ background: C.ink2 }}>
+          <div className="flex justify-between" style={{ color: C.ash }}><span>{t("kyc.fullName")}</span><span style={{ color: C.sand }}>{fullName || "—"}</span></div>
+          <div className="flex justify-between" style={{ color: C.ash }}><span>{t("kyc.document")}</span><span style={{ color: C.sand }}>{docType} {uploaded && "✓"}</span></div>
+          {error && <div className="rounded-lg px-3 py-2" style={{ background: `${C.coral}1A`, color: C.coral }}>{error}</div>}
+        </div>
+      )}
+      <div className="mt-5 flex gap-2">
+        {step > 0 && <button onClick={() => setStep((s) => s - 1)} className="flex-1 rounded-xl py-2.5 text-xs font-bold" style={{ background: C.ink3, color: C.sand }}>{t("kyc.back")}</button>}
+        {step < 3 ? <button onClick={() => setStep((s) => s + 1)} className="flex-1 rounded-xl py-2.5 text-xs font-bold" style={{ background: C.gold, color: C.ink }}>{t("kyc.next")}</button> : <button onClick={submit} disabled={submitting} className="flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold" style={{ background: C.teal, color: C.ink }}>{submitting && <Loader2 size={14} className="animate-spin" />}{t("kyc.submit")}</button>}
+      </div>
+    </div>
+  );
+}
