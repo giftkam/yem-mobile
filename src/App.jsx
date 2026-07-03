@@ -285,3 +285,93 @@ function AuthScreen({ lang, setLang, t, onAuth }) {
     </div>
   );
 }
+/* ---------------------------------- screens ---------------------------------- */
+function HomeScreen({ lang, setLang, t, balanceUsd, openAsset }) {
+  const [cat, setCat] = useState("stocks");
+  const filtered = ASSETS.filter((a) => a.category === cat);
+  return (
+    <div>
+      <Header lang={lang} setLang={setLang} />
+      <TickerStrip />
+      <div className="px-4 pt-5">
+        <div className="text-xs font-medium uppercase tracking-wider" style={{ color: C.ash }}>{t("home.portfolioValue")}</div>
+        <div className="mt-1 text-3xl font-bold" style={{ color: C.sand, fontFamily: "'Fraunces', serif" }}>{formatUsd(balanceUsd)}</div>
+      </div>
+      <div className="mt-5 grid grid-cols-3 gap-2 px-4">
+        {[{ label: t("home.deposit"), icon: Plus }, { label: t("home.markets"), icon: BarChart2 }, { label: t("home.withdraw"), icon: ArrowRight }].map((b) => (
+          <button key={b.label} className="flex flex-col items-center gap-1.5 rounded-2xl py-3 text-xs font-semibold" style={{ background: C.ink2, color: C.sand }}><b.icon size={16} style={{ color: C.gold }} />{b.label}</button>
+        ))}
+      </div>
+      <div className="mt-6 px-4">
+        <div className="mb-3 flex items-center justify-between"><span className="text-sm font-semibold" style={{ color: C.sand }}>{t("home.marketsTitle")}</span><Search size={16} style={{ color: C.ash }} /></div>
+        <SegmentedTabs value={cat} onChange={setCat} options={[{ value: "stocks", label: t("tabs.stocks") }, { value: "crypto", label: t("tabs.crypto") }, { value: "forex", label: t("tabs.forex") }]} />
+      </div>
+      <div className="mt-3 pb-4">{filtered.map((a) => <AssetRow key={a.id} asset={a} onClick={() => openAsset(a)} />)}</div>
+    </div>
+  );
+}
+
+function AssetScreen({ asset, lang, t, onBack, onOrderPlaced }) {
+  const [range, setRange] = useState("1D");
+  const [side, setSide] = useState("buy");
+  const [amount, setAmount] = useState("");
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const ranges = { "1D": 24, "1W": 28, "1M": 30, "3M": 36, "1Y": 48 };
+  const hist = useMemo(() => genHistory(asset.id + range, ranges[range], asset.price, asset.price * 0.025), [asset, range]);
+  const positive = asset.changePct >= 0;
+  const display = asset.category === "forex" ? asset.price.toFixed(4) : formatUsd(asset.price);
+  const amountUSD = Number(amount) || 0;
+
+  const submit = async () => {
+    if (amountUSD <= 0) return;
+    setLoading(true); setError(""); setResult(null);
+    try {
+      const res = await api.placeOrder({ assetSymbol: asset.symbol, side, amountUsd: amountUSD });
+      setResult(res);
+      onOrderPlaced();
+      setAmount("");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="pb-6">
+      <Header lang={lang} setLang={() => {}} title={asset.symbol} onBack={onBack} />
+      <div className="px-4">
+        <div className="flex items-center gap-2"><span className="text-sm" style={{ color: C.ash }}>{asset.name}</span><RegionPill region={asset.region} /></div>
+        <div className="mt-1 flex items-end gap-2">
+          <span className="text-3xl font-bold" style={{ color: C.sand, fontFamily: "'Fraunces', serif" }}>{display}</span>
+          <span className="mb-1 flex items-center gap-0.5 text-sm font-semibold" style={{ color: positive ? C.teal : C.coral }}>{positive ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}{Math.abs(asset.changePct).toFixed(2)}%</span>
+        </div>
+      </div>
+      <div className="mt-4 h-44 px-2">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={hist}><YAxis hide domain={["dataMin", "dataMax"]} /><Tooltip contentStyle={{ background: C.ink2, border: "none", borderRadius: 8, fontSize: 11 }} labelFormatter={() => ""} formatter={(v) => [Number(v).toFixed(asset.category === "forex" ? 4 : 2), asset.symbol]} /><Line type="monotone" dataKey="v" stroke={positive ? C.teal : C.coral} strokeWidth={2} dot={false} /></LineChart>
+        </ResponsiveContainer>
+      </div>
+      <div className="flex justify-center gap-2 px-4">{Object.keys(ranges).map((r) => <button key={r} onClick={() => setRange(r)} className="rounded-full px-3 py-1 text-xs font-semibold" style={{ background: range === r ? C.ink3 : "transparent", color: range === r ? C.gold : C.ash }}>{r}</button>)}</div>
+      <div className="mt-6 px-4">
+        <SegmentedTabs value={side} onChange={(v) => { setSide(v); setResult(null); setError(""); }} options={[{ value: "buy", label: t("asset.buy") }, { value: "sell", label: t("asset.sell") }]} />
+        <div className="mt-4">
+          <label className="text-xs font-medium uppercase tracking-wider" style={{ color: C.ash }}>{t("asset.amount")} (USD)</label>
+          <input value={amount} onChange={(e) => { setAmount(e.target.value.replace(/[^0-9.]/g, "")); setResult(null); setError(""); }} placeholder="0.00" inputMode="decimal" className="mt-1 w-full rounded-xl border-0 px-3 py-2.5 text-lg font-semibold outline-none" style={{ background: C.ink2, color: C.sand, fontFamily: "'IBM Plex Mono', monospace" }} />
+        </div>
+        {error && <div className="mt-3 rounded-lg px-3 py-2 text-xs" style={{ background: `${C.coral}1A`, color: C.coral }}>{error}</div>}
+        <button onClick={submit} disabled={loading || amountUSD <= 0} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold" style={{ background: side === "buy" ? C.teal : C.coral, color: C.ink, opacity: amountUSD > 0 ? 1 : 0.5 }}>
+          {loading && <Loader2 size={15} className="animate-spin" />}{side === "buy" ? t("asset.confirmBuy") : t("asset.confirmSell")}
+        </button>
+        {result && (
+          <div className="mt-3 flex items-start gap-2 rounded-xl px-3 py-2.5 text-xs" style={{ background: `${C.teal}1A`, color: C.teal }}>
+            <Check size={14} className="mt-0.5 shrink-0" />
+            <span>{t("asset.filled")} — {side === "buy" ? t("asset.bought") : t("asset.sold")} {result.quantity} {asset.symbol}. {t("asset.platformFee")}: {formatUsd(result.feeUsd)}.</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
