@@ -47,3 +47,56 @@ const I18N = {
     "auth.haveAccount": "Already have an account? Log in", "auth.noAccount": "New to Yem? Create an account", "auth.logout": "Log out",
   },
 };
+/* ---------------------------------- static display data ---------------------------------- */
+const ASSETS = [
+  { id: "aapl", symbol: "AAPL", name: "Apple Inc.", category: "stocks", region: "AM", price: 189.32, changePct: 1.24 },
+  { id: "msft", symbol: "MSFT", name: "Microsoft Corp.", category: "stocks", region: "AM", price: 421.04, changePct: -0.42 },
+  { id: "tsla", symbol: "TSLA", name: "Tesla Inc.", category: "stocks", region: "AM", price: 261.77, changePct: 3.18 },
+  { id: "sap", symbol: "SAP", name: "SAP SE", category: "stocks", region: "EUR", price: 214.55, changePct: 0.61 },
+  { id: "lvmh", symbol: "MC.PA", name: "LVMH", category: "stocks", region: "EUR", price: 668.20, changePct: -1.05 },
+  { id: "shel", symbol: "SHEL", name: "Shell plc", category: "stocks", region: "EUR", price: 31.84, changePct: 0.88 },
+  { id: "npn", symbol: "NPN", name: "Naspers Ltd.", category: "stocks", region: "AFR", price: 312.40, changePct: 2.05 },
+  { id: "dangcem", symbol: "DANGCEM", name: "Dangote Cement", category: "stocks", region: "AFR", price: 24.10, changePct: 0.33 },
+  { id: "scom", symbol: "SCOM", name: "Safaricom", category: "stocks", region: "AFR", price: 1.18, changePct: -0.72 },
+  { id: "btc", symbol: "BTC", name: "Bitcoin", category: "crypto", region: "AM", price: 68420.50, changePct: 2.41 },
+  { id: "eth", symbol: "ETH", name: "Ethereum", category: "crypto", region: "EUR", price: 3754.12, changePct: 1.77 },
+  { id: "usdt", symbol: "USDT", name: "Tether", category: "crypto", region: "AM", price: 1.00, changePct: 0.01 },
+  { id: "bnb", symbol: "BNB", name: "BNB", category: "crypto", region: "AFR", price: 612.30, changePct: -0.94 },
+  { id: "sol", symbol: "SOL", name: "Solana", category: "crypto", region: "AM", price: 172.66, changePct: 4.52 },
+  { id: "xrp", symbol: "XRP", name: "XRP", category: "crypto", region: "EUR", price: 0.62, changePct: -2.13 },
+  { id: "usdngn", symbol: "USD/NGN", name: "Dollar – Naira", category: "forex", region: "AFR", price: 1550.25, changePct: 0.18 },
+  { id: "eurusd", symbol: "EUR/USD", name: "Euro – Dollar", category: "forex", region: "EUR", price: 1.0742, changePct: -0.06 },
+  { id: "gbpusd", symbol: "GBP/USD", name: "Pound – Dollar", category: "forex", region: "EUR", price: 1.2664, changePct: 0.11 },
+  { id: "usdkes", symbol: "USD/KES", name: "Dollar – Shilling", category: "forex", region: "AFR", price: 129.40, changePct: -0.22 },
+  { id: "usdzar", symbol: "USD/ZAR", name: "Dollar – Rand", category: "forex", region: "AFR", price: 18.21, changePct: 0.34 },
+  { id: "eurgbp", symbol: "EUR/GBP", name: "Euro – Pound", category: "forex", region: "EUR", price: 0.8483, changePct: -0.04 },
+];
+
+const PAYMENT_METHODS = {
+  AFR: [
+    { id: "mpesa", label: "M-Pesa", icon: Smartphone, sub: "Mobile money · instant" },
+    { id: "airtel", label: "Airtel Money", icon: Smartphone, sub: "Mobile money · instant" },
+    { id: "momo", label: "MTN MoMo", icon: Smartphone, sub: "Mobile money · instant" },
+    { id: "banktransfer", label: "Bank transfer", icon: Building2, sub: "1–2 business days" },
+  ],
+  EUR: [
+    { id: "sepa", label: "SEPA transfer", icon: Building2, sub: "Same business day" },
+    { id: "card", label: "Debit / credit card", icon: CreditCard, sub: "Instant" },
+  ],
+  AM: [
+    { id: "ach", label: "ACH transfer", icon: Building2, sub: "1–3 business days" },
+    { id: "card", label: "Debit / credit card", icon: CreditCard, sub: "Instant" },
+    { id: "wire", label: "Wire transfer", icon: Banknote, sub: "Same business day" },
+  ],
+};
+const DOCUMENT_TYPES = {
+  AFR: ["National ID", "Passport", "Voter's card"],
+  EUR: ["National ID card", "Passport"],
+  AM: ["Driver's license", "Passport", "State ID"],
+};
+const COUNTRIES_BY_REGION = {
+  AFR: ["Nigeria", "Kenya", "South Africa", "Zambia", "Ghana", "Tanzania"],
+  EUR: ["Germany", "France", "United Kingdom", "Portugal", "Netherlands", "Spain"],
+  AM: ["United States", "Canada", "Brazil", "Mexico"],
+};
+const ALL_COUNTRIES = Object.entries(COUNTRIES_BY_REGION).flatMap(([region, list]) => list.map((name) => ({ name, region })));
