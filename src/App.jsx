@@ -100,3 +100,61 @@ const COUNTRIES_BY_REGION = {
   AM: ["United States", "Canada", "Brazil", "Mexico"],
 };
 const ALL_COUNTRIES = Object.entries(COUNTRIES_BY_REGION).flatMap(([region, list]) => list.map((name) => ({ name, region })));
+/* ---------------------------------- helpers ---------------------------------- */
+function seededRandom(seed) { let s = seed; return () => { s = (s * 9301 + 49297) % 233280; return s / 233280; }; }
+function genHistory(seedStr, points, base, volatility) {
+  let seed = 0;
+  for (let i = 0; i < seedStr.length; i++) seed += seedStr.charCodeAt(i) * (i + 7);
+  const rand = seededRandom(seed);
+  let v = base;
+  const out = [];
+  for (let i = 0; i < points; i++) { v = v + (rand() - 0.48) * volatility; if (v < base * 0.5) v = base * 0.5; out.push({ i, v: Number(v.toFixed(4)) }); }
+  return out;
+}
+function formatUsd(value) {
+  try { return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: Math.abs(value) >= 1000 ? 0 : 2 }).format(value); }
+  catch { return `$${value.toFixed(2)}`; }
+}
+
+/* ---------------------------------- small components ---------------------------------- */
+function RegionPill({ region }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full px-2 py-[3px] text-[10px] font-semibold tracking-wide" style={{ background: `${REGION_COLOR[region]}22`, color: REGION_COLOR[region] }}>
+      <span className="h-[5px] w-[5px] rounded-full" style={{ background: REGION_COLOR[region] }} />{region}
+    </span>
+  );
+}
+function Sparkline({ data, positive }) {
+  return (
+    <div className="h-9 w-20">
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={data}><YAxis hide domain={["dataMin", "dataMax"]} /><Line type="monotone" dataKey="v" stroke={positive ? C.teal : C.coral} strokeWidth={1.8} dot={false} isAnimationActive={false} /></LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+function TickerStrip() {
+  const items = useMemo(() => [...ASSETS, ...ASSETS], []);
+  return (
+    <div className="relative overflow-hidden border-y" style={{ borderColor: "#FFFFFF14", background: C.ink2 }}>
+      <div className="ticker-track flex w-max items-center gap-6 py-2 px-4">
+        {items.map((a, idx) => {
+          const positive = a.changePct >= 0;
+          const display = a.category === "forex" ? a.price.toFixed(4) : formatUsd(a.price);
+          return (
+            <div key={idx} className="flex items-center gap-2 whitespace-nowrap text-xs">
+              <RegionPill region={a.region} /><span className="font-semibold" style={{ color: C.sand }}>{a.symbol}</span>
+              <span style={{ color: C.ash, fontFamily: "'IBM Plex Mono', monospace" }}>{display}</span>
+              <span style={{ color: positive ? C.teal : C.coral }} className="flex items-center">{positive ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}{Math.abs(a.changePct).toFixed(2)}%</span>
+            </div>
+          );
+        })}
+      </div>
+      <style>{`
+        .ticker-track { animation: yem-scroll 38s linear infinite; }
+        @keyframes yem-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+        @media (prefers-reduced-motion: reduce) { .ticker-track { animation: none; } }
+      `}</style>
+    </div>
+  );
+}
