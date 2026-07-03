@@ -630,3 +630,37 @@ function KycScreen({ region, lang, setLang, t, status, setStatus, onBack }) {
     </div>
   );
 }
+function ProfileScreen({ currentUser, lang, setLang, t, kycStatus, openKyc, onLogout }) {
+  const isOwner = currentUser.role === "owner";
+  return (
+    <div className="px-4 pb-6">
+      <Header lang={lang} setLang={setLang} title={t("profile.title")} />
+      <div className="flex items-center gap-3 rounded-2xl p-4" style={{ background: C.ink2 }}>
+        <div className="flex h-12 w-12 items-center justify-center rounded-full text-base font-bold" style={{ background: C.gold, color: C.ink }}>{currentUser.fullName?.[0]?.toUpperCase() || "U"}</div>
+        <div>
+          <div className="flex items-center gap-1.5 text-sm font-semibold" style={{ color: C.sand }}>{currentUser.fullName}{isOwner && <span className="inline-flex items-center gap-1 rounded-full px-2 py-[2px] text-[10px] font-bold" style={{ background: `${C.gold}22`, color: C.gold }}><Crown size={10} />OWNER</span>}</div>
+          <div className="flex items-center gap-1.5 text-xs" style={{ color: C.ash }}>{kycStatus === "verified" ? t("profile.verified") : t("kyc.underReview")} <RegionPill region={currentUser.region} /></div>
+        </div>
+      </div>
+      {isOwner && <OwnerPanel t={t} />}
+      <div className="mt-4 flex flex-col gap-px overflow-hidden rounded-2xl" style={{ background: "#FFFFFF14" }}>
+        <button onClick={openKyc} className="flex items-center justify-between px-4 py-3 text-left text-sm" style={{ background: C.ink2, color: C.sand }}><span className="flex items-center gap-2"><ShieldCheck size={15} style={{ color: kycStatus === "verified" ? C.teal : C.ash }} />{t("profile.identity")}</span><ArrowRight size={14} style={{ color: C.ash }} /></button>
+        {[t("profile.payments"), t("profile.notifications"), t("profile.security"), t("profile.help")].map((label) => <button key={label} className="flex items-center justify-between px-4 py-3 text-left text-sm" style={{ background: C.ink2, color: C.sand }}>{label}<ArrowRight size={14} style={{ color: C.ash }} /></button>)}
+      </div>
+      <button onClick={onLogout} className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-xs font-bold" style={{ background: `${C.coral}1A`, color: C.coral }}><LogOut size={14} />{t("auth.logout")}</button>
+    </div>
+  );
+}
+
+function BottomNav({ screen, setScreen, t }) {
+  const items = [
+    { id: "home", label: t("nav.home"), icon: Home }, { id: "markets", label: t("nav.markets"), icon: BarChart2 },
+    { id: "orders", label: t("nav.orders"), icon: FileText }, { id: "wallet", label: t("nav.wallet"), icon: Wallet },
+    { id: "profile", label: t("nav.profile"), icon: User },
+  ];
+  return (
+    <div className="sticky bottom-0 z-20 flex items-center justify-around border-t px-1 py-2.5" style={{ background: C.ink, borderColor: "#FFFFFF14" }}>
+      {items.map((it) => { const active = screen === it.id; return <button key={it.id} onClick={() => setScreen(it.id)} className="flex flex-col items-center gap-0.5 px-2 py-1"><it.icon size={18} style={{ color: active ? C.gold : C.ash }} /><span className="text-[9.5px] font-medium" style={{ color: active ? C.gold : C.ash }}>{it.label}</span></button>; })}
+    </div>
+  );
+}
