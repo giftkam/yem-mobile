@@ -210,3 +210,78 @@ function Header({ lang, setLang, title, onBack }) {
     </div>
   );
 }
+/* ---------------------------------- auth ---------------------------------- */
+function AuthScreen({ lang, setLang, t, onAuth }) {
+  const [mode, setMode] = useState("signup");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [country, setCountry] = useState(ALL_COUNTRIES[0].name);
+  const [password, setPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const submit = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      if (mode === "signup") {
+        const { token, user } = await api.signup({ fullName: name, email, phone, country, password });
+        onAuth(token, user);
+      } else {
+        const { token, user } = await api.login({ email, password });
+        onAuth(token, user);
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex h-full flex-col px-6 pb-6 pt-10">
+      <div className="flex items-center justify-between">
+        <span className="text-2xl font-bold" style={{ color: C.gold, fontFamily: "'Fraunces', serif" }}>Yem</span>
+        <select value={lang} onChange={(e) => setLang(e.target.value)} className="rounded-full border-0 px-2.5 py-1 text-xs font-semibold uppercase outline-none" style={{ background: C.ink3, color: C.sand }}>
+          {LANGUAGES.map((l) => <option key={l.code} value={l.code}>{l.code.toUpperCase()}</option>)}
+        </select>
+      </div>
+      <div className="mt-6">
+        <div className="text-2xl font-bold" style={{ color: C.sand, fontFamily: "'Fraunces', serif" }}>{t("auth.welcome")}</div>
+        <div className="mt-1 text-xs" style={{ color: C.ash }}>{t("auth.tagline")}</div>
+      </div>
+      <div className="mt-6"><SegmentedTabs value={mode} onChange={(v) => { setMode(v); setError(""); }} options={[{ value: "signup", label: t("auth.signup") }, { value: "login", label: t("auth.login") }]} /></div>
+      <div className="mt-5 flex flex-col gap-3 overflow-y-auto">
+        {mode === "signup" && (
+          <div><label className="text-xs font-medium uppercase tracking-wider" style={{ color: C.ash }}>{t("auth.fullName")}</label>
+            <input value={name} onChange={(e) => setName(e.target.value)} className="mt-1 w-full rounded-xl border-0 px-3 py-2.5 text-sm outline-none" style={{ background: C.ink2, color: C.sand }} placeholder="e.g. Amara Bello" /></div>
+        )}
+        <div><label className="text-xs font-medium uppercase tracking-wider" style={{ color: C.ash }}>{t("auth.email")}</label>
+          <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" className="mt-1 w-full rounded-xl border-0 px-3 py-2.5 text-sm outline-none" style={{ background: C.ink2, color: C.sand }} placeholder="you@example.com" /></div>
+        {mode === "signup" && (
+          <>
+            <div><label className="text-xs font-medium uppercase tracking-wider" style={{ color: C.ash }}>{t("auth.phone")}</label>
+              <input value={phone} onChange={(e) => setPhone(e.target.value)} className="mt-1 w-full rounded-xl border-0 px-3 py-2.5 text-sm outline-none" style={{ background: C.ink2, color: C.sand }} placeholder="+___ ___ ___ ___" /></div>
+            <div><label className="text-xs font-medium uppercase tracking-wider" style={{ color: C.ash }}>{t("auth.country")}</label>
+              <select value={country} onChange={(e) => setCountry(e.target.value)} className="mt-1 w-full rounded-xl border-0 px-3 py-2.5 text-sm outline-none" style={{ background: C.ink2, color: C.sand }}>
+                {ALL_COUNTRIES.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}
+              </select></div>
+          </>
+        )}
+        <div><label className="text-xs font-medium uppercase tracking-wider" style={{ color: C.ash }}>{t("auth.password")}</label>
+          <div className="relative mt-1">
+            <input value={password} onChange={(e) => setPassword(e.target.value)} type={showPw ? "text" : "password"} className="w-full rounded-xl border-0 px-3 py-2.5 text-sm outline-none" style={{ background: C.ink2, color: C.sand }} placeholder="••••••••" />
+            <button onClick={() => setShowPw((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: C.ash }}>{showPw ? <EyeOff size={15} /> : <Eye size={15} />}</button>
+          </div>
+        </div>
+        {error && <div className="rounded-lg px-3 py-2 text-xs" style={{ background: `${C.coral}1A`, color: C.coral }}>{error}</div>}
+        <button onClick={submit} disabled={loading} className="mt-1 flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold" style={{ background: C.gold, color: C.ink, opacity: loading ? 0.7 : 1 }}>
+          {loading && <Loader2 size={15} className="animate-spin" />}{mode === "signup" ? t("auth.createAccount") : t("auth.signIn")}
+        </button>
+        <button onClick={() => { setMode(mode === "signup" ? "login" : "signup"); setError(""); }} className="text-center text-xs font-medium" style={{ color: C.teal }}>{mode === "signup" ? t("auth.haveAccount") : t("auth.noAccount")}</button>
+      </div>
+    </div>
+  );
+}
