@@ -158,3 +158,55 @@ function TickerStrip() {
     </div>
   );
 }
+function AssetRow({ asset, onClick }) {
+  const positive = asset.changePct >= 0;
+  const hist = useMemo(() => genHistory(asset.id, 20, asset.price, asset.price * 0.02), [asset]);
+  const display = asset.category === "forex" ? asset.price.toFixed(4) : formatUsd(asset.price);
+  return (
+    <button onClick={onClick} className="flex w-full items-center justify-between gap-3 border-b px-4 py-3 text-left transition-colors active:bg-white/5" style={{ borderColor: "#FFFFFF0F" }}>
+      <div className="flex min-w-0 items-center gap-3">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[11px] font-bold" style={{ background: C.ink3, color: C.gold }}>{asset.symbol.slice(0, 2)}</div>
+        <div className="min-w-0">
+          <div className="flex items-center gap-2"><span className="truncate text-sm font-semibold" style={{ color: C.sand }}>{asset.symbol}</span><RegionPill region={asset.region} /></div>
+          <div className="truncate text-xs" style={{ color: C.ash }}>{asset.name}</div>
+        </div>
+      </div>
+      <div className="flex items-center gap-3">
+        <Sparkline data={hist} positive={positive} />
+        <div className="text-right">
+          <div className="text-sm font-semibold" style={{ color: C.sand, fontFamily: "'IBM Plex Mono', monospace" }}>{display}</div>
+          <div className="flex items-center justify-end gap-0.5 text-xs" style={{ color: positive ? C.teal : C.coral }}>{positive ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}{Math.abs(asset.changePct).toFixed(2)}%</div>
+        </div>
+      </div>
+    </button>
+  );
+}
+function SegmentedTabs({ value, onChange, options }) {
+  return (
+    <div className="flex gap-1 rounded-full p-1" style={{ background: C.ink3 }}>
+      {options.map((o) => <button key={o.value} onClick={() => onChange(o.value)} className="flex-1 rounded-full py-1.5 text-xs font-semibold transition-colors" style={{ background: value === o.value ? C.gold : "transparent", color: value === o.value ? C.ink : C.ash }}>{o.label}</button>)}
+    </div>
+  );
+}
+function Header({ lang, setLang, title, onBack }) {
+  const [openLang, setOpenLang] = useState(false);
+  return (
+    <div className="sticky top-0 z-20 flex items-center justify-between px-4 pb-3 pt-4" style={{ background: C.ink }}>
+      <div className="flex items-center gap-2">
+        {onBack ? <button onClick={onBack} className="rounded-full p-1.5 -ml-1.5" style={{ color: C.sand }}><ChevronLeft size={20} /></button> : <span className="text-xl font-bold" style={{ color: C.gold, fontFamily: "'Fraunces', serif" }}>Yem</span>}
+        {title && <span className="text-base font-semibold" style={{ color: C.sand }}>{title}</span>}
+      </div>
+      <div className="flex items-center gap-1.5">
+        {!title && <button className="rounded-full p-1.5" style={{ color: C.sand }}><Bell size={18} /></button>}
+        <div className="relative">
+          <button onClick={() => setOpenLang((v) => !v)} className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold uppercase" style={{ background: C.ink3, color: C.sand }}>{lang}<span style={{ color: C.ash }}>▾</span></button>
+          {openLang && (
+            <div className="absolute right-0 z-30 mt-1 w-36 overflow-hidden rounded-xl border shadow-xl" style={{ background: C.ink2, borderColor: "#FFFFFF1A" }}>
+              {LANGUAGES.map((l) => <button key={l.code} onClick={() => { setLang(l.code); setOpenLang(false); }} className="flex w-full items-center justify-between px-3 py-2 text-left text-xs" style={{ color: l.code === lang ? C.gold : C.sand }}><span>{l.label}</span><span style={{ color: C.ash }}>{l.code.toUpperCase()}</span></button>)}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
