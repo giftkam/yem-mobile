@@ -286,7 +286,7 @@ function AuthScreen({ lang, setLang, t, onAuth }) {
   );
 }
 /* ---------------------------------- screens ---------------------------------- */
-function HomeScreen({ lang, setLang, t, balanceUsd, openAsset }) {
+function HomeScreen({ lang, setLang, t, balanceUsd, openAsset, setScreen }) {
   const [cat, setCat] = useState("stocks");
   const filtered = ASSETS.filter((a) => a.category === cat);
   return (
