@@ -298,9 +298,9 @@ function HomeScreen({ lang, setLang, t, balanceUsd, openAsset, setScreen }) {
         <div className="mt-1 text-3xl font-bold" style={{ color: C.sand, fontFamily: "'Fraunces', serif" }}>{formatUsd(balanceUsd)}</div>
       </div>
       <div className="mt-5 grid grid-cols-3 gap-2 px-4">
-        {[{ label: t("home.deposit"), icon: Plus }, { label: t("home.markets"), icon: BarChart2 }, { label: t("home.withdraw"), icon: ArrowRight }].map((b) => (
-          <button key={b.label} className="flex flex-col items-center gap-1.5 rounded-2xl py-3 text-xs font-semibold" style={{ background: C.ink2, color: C.sand }}><b.icon size={16} style={{ color: C.gold }} />{b.label}</button>
-        ))}
+<button onClick={() => setScreen("wallet")} className="flex flex-col items-center gap-1.5 rounded-2xl py-3 text-xs font-semibold" style={{ background: C.ink2, color: C.sand }}><Plus size={16} style={{ color: C.gold }} />{t("home.deposit")}</button>
+        <button onClick={() => setScreen("markets")} className="flex flex-col items-center gap-1.5 rounded-2xl py-3 text-xs font-semibold" style={{ background: C.ink2, color: C.sand }}><BarChart2 size={16} style={{ color: C.gold }} />{t("home.markets")}</button>
+        <button onClick={() => setScreen("wallet")} className="flex flex-col items-center gap-1.5 rounded-2xl py-3 text-xs font-semibold" style={{ background: C.ink2, color: C.sand }}><ArrowRight size={16} style={{ color: C.gold }} />{t("home.withdraw")}</button>
       </div>
       <div className="mt-6 px-4">
         <div className="mb-3 flex items-center justify-between"><span className="text-sm font-semibold" style={{ color: C.sand }}>{t("home.marketsTitle")}</span><Search size={16} style={{ color: C.ash }} /></div>
