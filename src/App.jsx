@@ -719,7 +719,7 @@ export default function App() {
   } else if (screen === "asset" && selectedAsset) {
     body = <AssetScreen asset={selectedAsset} lang={lang} t={t} onBack={() => setScreen("home")} onOrderPlaced={refreshBalance} />;
   } else if (screen === "markets") {
-    body = <HomeScreen lang={lang} setLang={setLang} t={t} balanceUsd={balanceUsd} openAsset={openAsset} />;
+    body = <HomeScreen lang={lang} setLang={setLang} t={t} balanceUsd={balanceUsd} openAsset={openAsset} setScreen={setScreen} />;
   } else if (screen === "orders") {
     body = <OrdersScreen lang={lang} setLang={setLang} t={t} />;
   } else if (screen === "wallet") {
@@ -729,7 +729,7 @@ export default function App() {
   } else if (screen === "profile") {
     body = <ProfileScreen currentUser={currentUser} lang={lang} setLang={setLang} t={t} kycStatus={kycStatus} openKyc={() => setScreen("kyc")} onLogout={handleLogout} />;
   } else {
-    body = <HomeScreen lang={lang} setLang={setLang} t={t} balanceUsd={balanceUsd} openAsset={openAsset} />;
+    body = <HomeScreen lang={lang} setLang={setLang} t={t} balanceUsd={balanceUsd} openAsset={openAsset} setScreen={setScreen} />;
   }
 
   const showNav = authed && screen !== "asset" && screen !== "kyc";
